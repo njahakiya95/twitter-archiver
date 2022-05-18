@@ -22,6 +22,10 @@ public class TwitterArchiver {
             System.out.println("Invalid/Illegal user keyword input");
 
         }
-        
+
+        //Install and connect MongoDB database.
+        //Use keyword as a document key
+        //Connect to twitter account and extract tweets with keyword
+        //Save keywords to MongoDB
     }
 }
