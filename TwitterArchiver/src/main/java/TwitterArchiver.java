@@ -1,18 +1,13 @@
-import com.mongodb.*;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
+import com.mongodb.client.MongoClient;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import twitter4j.*;
 import java.util.List;
 import java.util.Scanner;
-
-import com.mongodb.util.JSON;
-
+import com.mongodb.*;
 
 public class TwitterArchiver {
-    //tweets will help store tweets into <keyword> collection
-    private static DBCollection tweets;
     public static void main(String args[]) throws TwitterException {
         //Create a Scanner object called userInput to read user input from keyboard
         Scanner userInput = new Scanner(System.in);
@@ -25,44 +20,38 @@ public class TwitterArchiver {
         //Close Scanner object
         userInput.close();
 
-        //Connect with MongoDB client
-        MongoClient client = new MongoClient(new ServerAddress("localhost", 27017));
+        //Create mongoClient to connect to database
+        MongoClient mongoClient = MongoClients.create();
 
-        //Get tweetDB which holds the tweets collection and tweet documents
-        MongoDatabase database = client.getDatabase("tweetDB");
+        //Get database tweetDB (will automatically be created if it doesn't exist)
+        MongoDatabase database = mongoClient.getDatabase("tweetDB");
 
-        //Create a collection based on the keyword entered
-        tweets = database.createCollection(keyword);
+        //Create a collection based on the keyword to store the tweets
+        MongoCollection<Document> tweetKeyword = database.getCollection(keyword);
 
         //Create TwitterFactory() object called twitter
-        try {
-            Twitter twitter = new TwitterFactory().getInstance();
-            Query queryKeyword = new Query(keyword + " exclude:retweets");   //query user-input keyword
-            queryKeyword.setCount(100);  //limit search to 10 tweets
-            QueryResult result = twitter.search(queryKeyword);   //search for tweets
+        Twitter twitter = new TwitterFactory().getInstance();
+        Query queryKeyword = new Query(keyword + " exclude:retweets");   //query user-input keyword and exclude any retweets
+        queryKeyword.setCount(100);  //limit search to 10 tweets
+        QueryResult result = twitter.search(queryKeyword);   //search for tweets based on keyword
 
-            System.out.println("Retrieving tweets, please wait!");  //Output message
-            List<Status> tweets = result.getTweets();   //Store tweets in an ArrayList
-            for (Status tweet : tweets) {
-                System.out.println("@" + tweet.getUser() + "  " + tweet.getText());
-                System.out.println("\n");
-                System.out.println("===========================================================================");
-                System.out.println("\n");
+        System.out.println("Retrieving tweets, please wait!\n");  //Output message
+        List<Status> tweets = result.getTweets();   //Store tweets in an ArrayList
 
-                //Store tweet information in tweetStore object
-                BasicDBObject tweetStore = new BasicDBObject();
-                tweetStore.put("user_name",tweet.getUser().getScreenName());
-                tweetStore.put("retweet_count",tweet.getRetweetCount());
-                tweetStore.put("source",tweet.getSource());
-                tweetStore.put("tweet_id",tweet.getId());
-                tweetStore.put("tweet_text",tweet.getText());
+        for (Status tweet : tweets) {
+            //Print each found tweet along with username
+            System.out.println("@" + tweet.getUser() + "  " + tweet.getText());
+            System.out.println("\n");
+            System.out.println("===========================================================================");
+            System.out.println("\n");
 
-                //Save tweetStore object to <keyword> collection
-                tweets.insert(tweetStore); 
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            //Use tweetObj to store the tweets in the <keyword> collection
+            BasicDBObject tweetObj = new BasicDBObject();
+            tweetObj.put("user_name",tweet.getUser().getScreenName());
+            tweetObj.put("retweet_count",tweet.getRetweetCount());
+            tweetObj.put("source",tweet.getSource());
+            tweetObj.put("tweet_id",tweet.getId());
+            tweetObj.put("tweet_text",tweet.getText());
+        };
     };
 }
