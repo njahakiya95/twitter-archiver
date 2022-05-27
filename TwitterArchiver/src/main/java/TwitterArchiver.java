@@ -1,11 +1,9 @@
 import com.mongodb.client.*;
 import com.mongodb.client.MongoClient;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import twitter4j.*;
 import java.util.List;
 import java.util.Scanner;
-import com.mongodb.*;
 
 public class TwitterArchiver {
     public static void main(String args[]) throws TwitterException {
@@ -46,12 +44,15 @@ public class TwitterArchiver {
             System.out.println("\n");
 
             //Use tweetObj to store the tweets in the <keyword> collection
-            BasicDBObject tweetObj = new BasicDBObject();
-            tweetObj.put("user_name",tweet.getUser().getScreenName());
-            tweetObj.put("retweet_count",tweet.getRetweetCount());
-            tweetObj.put("source",tweet.getSource());
-            tweetObj.put("tweet_id",tweet.getId());
-            tweetObj.put("tweet_text",tweet.getText());
+            Document eachTweet = new Document();
+            eachTweet.append("user_name",tweet.getUser().getScreenName());
+            eachTweet.append("retweet_count",tweet.getRetweetCount());
+            eachTweet.append("source",tweet.getSource());
+            eachTweet.append("tweet_id",tweet.getId());
+            eachTweet.append("tweet_text",tweet.getText());
+
+            //Insert eachTweet into the collection
+            database.getCollection(keyword).insertOne(eachTweet);
         };
     };
 }
